@@ -40,7 +40,7 @@ Usaremos una base de datos que contiene información acerca
 Next we load the move review dataset
 
 ```{r}
-reviews = read.csv("data/movie-pang02.csv", stringsAsFactors = F)
+reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_1/data/movie-pang02.csv", stringsAsFactors = F)
 View(reviews)
 ```
 
