@@ -1,0 +1,217 @@
+---
+title: "Minería de textos en libros"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+# Cargamos las librerías que usaremos en el script
+```{r}
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(cluster)
+```
+
+# Lectura y preparación del texto
+El texto con el que trabajeremos es el texto del libro Niebla de Miguel de Unamuno, el cual puede ser descargado de la biblioteca digital Gutenberg.
+
+Nuestro interés está en el contenido de este libro y no en los avisos legales de Gutenberg, prólogo y anotaciones, así que los omitiremos de la lectura. Empezaremos a leer el documento desde la línea 420, que es donde termina el prólogo, introducción e índice de Niebla, para ello nos saltaremos (skip) 419 líneas previas. De manera complementaria, detendremos la lectura en la línea 8313, que es donde inician los avisos legales de Gutenberg, por lo tanto leeremos un máximo (nmax) de 8313-419 líneas.
+
+Realizamos estas operaciones y asignamos el resultado al objeto libro_raw.
+
+```{r}
+libro_raw <- read_lines("data/Niebla-Miguel_de_unamuno.txt", skip = 419, n_max = 8313-419)
+```
+
+El objeto libro_raw que obtuvimos es del tipo character con 7894 elementos.
+
+```{r}
+str(libro_raw)
+```
+
+Cada uno de estos elementos corresponde a una línea de Niebla y tiene ancho máximo 70 caracteres, pues este es el ancho usado en los textos electrónicos de Gutenberg. Esta es una cantidad muy pequeña de texto para encontrar asociaciones entre palabras, por lo que necesitamos crear elementos con una mayor cantidad de caracteres en cada uno.
+
+## Creación de párrafos
+
+Una manera de crear párrafos completos es editando el texto original y eliminando los saltos de línea. Existen más de 2 mil párrafos en el texto, por lo cual nos tomaría tiempo editarlo manualmente.
+
+Otra manera es unir 10 líneas y crear párrafos.  Creamos un vector llamado diez con 10 repeticiones de los números desde 1 hasta el número de renglones en el documento, dividido entre 10 (length(nov_raw)/10.
+
+Con esto, tendremos un vector con diez 1, luego diez 2, etc, hasta llegar al número máxico de grupos de diez posibles en función del número de renglones de nuestro documento.
+
+Usaremos estos números para hacer grupos de diez líneas consecutivas.
+
+```{r}
+diez <- rep(1:ceiling(length(libro_raw)/10), each = 10)
+```
+
+De este vector, nos quedamos con un número de elementos igual al número de renglones del objeto nov_raw (length(nov_raw)), para facilitar combinarlos.
+
+```{r}
+diez <- diez[1:length(libro_raw)]
+```
+
+Combinamos diez con libro_raw y los asignamos al objeto libro_text. Así tenemos una columna con las líneas de texto y otra con un número que identifica a qué grupo de diez renglones pertenece.
+
+Además, convertimos a data.frame para que las columnas estén identificadas con un nombre, lo cual será útil en los siguientes pasos.
+
+```{r}
+libro_text <- cbind(diez, libro_raw) %>% data.frame()
+```
+
+Usamos aggregate para concatenar las líneas (FUN = paste, con collapse = " " para preservar el espacio entre palabras), agrupados por diez (formula = libro_raw ~ diez).
+
+```{r}
+libro_text <- aggregate(formula = libro_raw ~ diez,
+                      data = libro_text,
+                      FUN = paste,
+                      collapse = " ")
+```
+
+Como sólo necesitamos la columna con los ahora párrafos de texto, con eso nos quedamos. Aprovechamos para transformar libro_text en una matriz, pues esto nos facilitará los pasos siguientes.
+
+```{r}
+libro_text <- libro_text %>% select(libro_raw) %>% as.matrix
+dim(libro_text)
+```
+
+## Limpieza del texto
+
+Necesitamos limpiar el texto de caracteres que son de poca utilidad en la mineria de textos.
+
+Empezamos por aseguramos de que no queden caracteres especiales de la codificación, como saltos de línea y tabulaciones, con un poco de ayuda de Regular Expressions.
+
+```{r}
+libro_text <- gsub("[[:cntrl:]]", " ", libro_text)
+libro_text <- tolower(libro_text)
+libro_text <- removeWords(libro_text, words = stopwords("spanish"))
+libro_text <- removePunctuation(libro_text)
+libro_text <- removeNumbers(libro_text)
+libro_text <- stripWhitespace(libro_text)
+```
+
+## Análisis del Corpus
+
+Con nuestro documento preparado, procedemos a crear nuestro Corpus, es decir, esto es nuestro acervo de documentos a analizar.
+
+En nuestro caso, nuestro Corpus se compone de todos los parrafos del libro Niebla y los asignaremos al objeto libro_corpus usando las funciones VectorSource y Corpus.
+
+```{r}
+libro_corpus <- Corpus(VectorSource(libro_text))
+libro_corpus
+```
+
+Como podemos ver, nustro Copus está compuesto por 790 documentos. Los siguientes análisis se harán a partir de este Corpus.
+
+## Nube de palabras
+
+Para analizar datos en forma de texto, usamos una representación del tipo Document-Term Matrix (DTM)
+
+```{r}
+libro_dtm <- DocumentTermMatrix(libro_corpus)
+libro_dtm
+```
+
+Para reducir la dimnesionalidad de la matriz DTM, podemos eliminar las palabras menos frecuentes. Para ellos usamos la función removeSparseTerms() y el valor 99 para la dispersión.
+
+```{r}
+libro_dtm = removeSparseTerms(libro_dtm, 0.99)
+libro_dtm
+```
+
+Usemos la función wordcloud() para mostrar una nube de palabras
+
+```{r}
+freq = data.frame(sort(colSums(as.matrix(libro_dtm)), decreasing=TRUE))
+wordcloud(rownames(freq), freq[,1], max.words=80, random.order = F, colors=brewer.pal(8, "Dark2"))
+```
+
+## Más depuración
+
+Como observamos en las nubes de palabras que generamos, aún tenemos palabras que aparecen con mucha frecuencia en nuestro texto que en realidad no son de mucha utilidad para el análisis.
+
+Usaremos la función removeWords indicando en el argumento words que palabras deseamos eliminar de nuestro Corpus.
+
+```{r}
+libro_text <- removeWords(libro_text, words = c("usted", "pues", "tal", "tan", "así", "dijo", "cómo", "sino", "entonces", "aunque", "don", "doña"))
+
+libro_corpus <- libro_text %>% VectorSource() %>% Corpus()
+```
+
+```{r}
+libro_dtm <- DocumentTermMatrix(libro_corpus)
+libro_dtm = removeSparseTerms(libro_dtm, 0.99)
+
+freq = data.frame(sort(colSums(as.matrix(libro_dtm)), decreasing=TRUE))
+wordcloud(rownames(freq), freq[,1], max.words=80, random.order = F, colors=brewer.pal(8, "Dark2"))
+```
+
+## Term Document Matrix
+
+Usaremos la función TermDocumentMatrix en nuestro Corpus y asignaremos el resultado al objeto nov_tdm.
+
+```{r}
+libro_tdm <- TermDocumentMatrix(libro_corpus)
+libro_tdm
+```
+
+
+```{r}
+libro_mat <- as.matrix(libro_tdm)
+dim(libro_mat)
+```
+
+Obtenemos las sumas de renglones (rowSums) odenadas de mayor a menor (sort con decreasing = TRUE)para conocer la frecuencia de cada palabra y después transformamos los resultados a objeto de clase data.frame de dos columnas, palabra y frec, que nos permitirá graficar fácilmente su contenido.
+
+```{r}
+libro_mat <- libro_mat %>% rowSums() %>% sort(decreasing = TRUE)
+libro_mat <- data.frame(palabra = names(libro_mat), frec = libro_mat)
+```
+
+Además, podemos obtener fácilmente las palabras más frecuentes. Por ejemplo, las veinte más frecuentes, pidiendo los primeros veinte renglones de nov_mat.
+
+```{r}
+libro_mat[1:20, ]
+```
+
+## Gráficas de frecuencia
+
+Crearemos un par de gráficas. Primero, la frecuencia de uso de las palabras más frecuentes en Niebla.
+
+Para esto usaremos ggplot2, que tiene su propia gramática para construir gráficas. Para fines de este documento, no nos detendremos a explicar a detalle su uso. Lo relevante aquí es notar que estamos obteniendo la información para construir las gráficas solicitando renglones del objeto nov_mat
+
+```{r}
+libro_mat[1:10, ] %>%
+  ggplot(aes(palabra, frec)) +
+  geom_bar(stat = "identity", color = "black", fill = "#87CEFA") +
+  geom_text(aes(hjust = 1.3, label = frec)) + 
+  coord_flip() + 
+  labs(title = "Diez palabras más frecuentes en Niebla",  x = "Palabras", y = "Número de usos")
+```
+
+## Asociaciones entre palabras
+
+
