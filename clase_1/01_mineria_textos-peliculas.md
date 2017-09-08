@@ -175,7 +175,7 @@ freq = data.frame(sort(colSums(as.matrix(review_dtm)), decreasing=TRUE))
 wordcloud(rownames(freq), freq[,1], max.words=100, colors=brewer.pal(8, "Dark2"))
 ```
 
-![](01_mineria_textos_-_peliculas_files/figure-markdown_github/unnamed-chunk-12-1.png)
+![](01_mineria_textos-peliculas_files/figure-markdown_github/unnamed-chunk-12-1.png)
 
 Un podría argumentar que en la nube de palabras, los términos one, film y movie no son del todo relavantes, pues ya sabemos que el dataset es acerca de películas.
 
@@ -216,4 +216,4 @@ freq = data.frame(sort(colSums(as.matrix(review_dtm_tfidf)), decreasing=TRUE))
 wordcloud(rownames(freq), freq[,1], max.words=30, scale = c(3, 0.3), colors=brewer.pal(8, "Dark2"))
 ```
 
-![](01_mineria_textos_-_peliculas_files/figure-markdown_github/unnamed-chunk-15-1.png)
+![](01_mineria_textos-peliculas_files/figure-markdown_github/unnamed-chunk-15-1.png)
