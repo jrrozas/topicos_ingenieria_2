@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Ajustamos el locale del sistema de acuerdo al OS del computador
+# Ajustamos el locale del sistema de acuerdo al OS
 
 ```{r}
 #En caso de usa Mac OS X
@@ -47,7 +47,7 @@ reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/c
 #View(reviews)
 ```
 
-## Creación del corpus
+## Definición del corpus
 
 El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenido. Usaremos el campo el campo contenido para definir el Corpus (conjunto de documentos).
 

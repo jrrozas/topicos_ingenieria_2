@@ -5,7 +5,12 @@ Roberto Muñoz
 
 -   [Ajustamos el locale del sistema de acuerdo al OS del computador](#ajustamos-el-locale-del-sistema-de-acuerdo-al-os-del-computador)
 -   [Instalamos y cargamos las librerías que usaremos](#instalamos-y-cargamos-las-librerias-que-usaremos)
--   [Lectura de datos](#lectura-de-datos)
+-   [Preparación y análisis de datos](#preparacion-y-analisis-de-datos)
+    -   [Lectura de datos](#lectura-de-datos)
+    -   [Creación del corpus](#creacion-del-corpus)
+    -   [Creación de matriz DTM](#creacion-de-matriz-dtm)
+    -   [Creación de nube de palabras](#creacion-de-nube-de-palabras)
+    -   [Creación de matriz DTM usando tf–idf](#creacion-de-matriz-dtm-usando-tfidf)
 
 Ajustamos el locale del sistema de acuerdo al OS del computador
 ===============================================================
@@ -51,8 +56,11 @@ install_load_library( c('tm', 'SnowballC', 'wordcloud', 'topicmodels') )
 
     ## Loading required package: topicmodels
 
+Preparación y análisis de datos
+===============================
+
 Lectura de datos
-================
+----------------
 
 Usaremos una base de datos que contiene 2 mil críticas de películas de cine. Las críticas están escritas en inglés, fueron y fueron publicadas por
 
@@ -61,7 +69,10 @@ reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/c
 #View(reviews)
 ```
 
-El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenido. Transformamos este dataset en un corpus.
+Creación del corpus
+-------------------
+
+El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenido. Usaremos el campo el campo contenido para definir el Corpus (conjunto de documentos).
 
 ``` r
 review_corpus = Corpus(VectorSource(reviews$contenido))
@@ -86,6 +97,9 @@ inspect(review_corpus[3])
     ## Content:  documents: 1
     ## 
     ## [1]  ve got mail works alot better deserves order make film success cast two extremely popular attractive stars share screen two hours collect profits real acting involved original inventive bone body basically complete shoot shop around corner adding modern twists essentially goes defies concepts good contemporary filmmaking overly sentimental times terribly mushy mention manipulative oh enjoyable manipulation must something casting manipulation makes movie work well absolutely hated previous ryanhanks teaming sleepless seattle couldn t directing films helmed woman haven t quite yet figured liked much ve got mail really important like something much even question storyline cliched come tom hanks plays joe fox insanely likeable owner discount book chain meg ryan plays kathleen kelley even insanely likeable proprietor family run children book shop called nice homage shop around corner fox kelley soon become bitter rivals new fox books store opening right across block small business little know already love internet neither party knows person true identity rest story isn t important serve mere backdrop two stars share screen sure mildly interesting subplots fail comparison utter cuteness main relationship course leads predictable climax foreseeable ending damn cute well done doubt movie entire year contains scene evokes much pure joy part ryan discovers true identity online love filled lack better word happiness first time year actually left theater smiling
+
+Creación de matriz DTM
+----------------------
 
 Para analizar datos en forma de texto, usamos una representación del tipo Document-Term Matrix (DTM): Documentos como filas, palabras como columnas, frecuencia de las palabras en el documento como valores. Debido al número de palabras únicas en el corpus esta matriz puede ser muy grande.
 
@@ -150,7 +164,10 @@ inspect(review_dtm[1,1:20])
     ## Docs accent acting acts actually adapted alan albert allen almost amounts
     ##    1      2      1    1        1       1    1      1     1      1       1
 
-Construyamos una nuebe palabras usando la función findFreqTerms() y usemos solamente las palabras que tienen una frecuencia absoluta de al menos 1000.
+Creación de nube de palabras
+----------------------------
+
+Construyamos una nube palabras usando la función findFreqTerms() y usemos solamente las palabras que tienen una frecuencia absoluta de al menos 1000.
 
 ``` r
 findFreqTerms(review_dtm, 1000)
@@ -179,7 +196,10 @@ wordcloud(rownames(freq), freq[,1], max.words=100, colors=brewer.pal(8, "Dark2")
 
 Un podría argumentar que en la nube de palabras, los términos one, film y movie no son del todo relavantes, pues ya sabemos que el dataset es acerca de películas.
 
-En este tipo de situaciones es conveniente usar la métrica tf-idf (term frequency-inverse document frequency) en vez de la frecuencia de los términos como valor en la matriz DTM. La métrica tf-idf mide la importancia relativa de las palabras en un documento.
+Creación de matriz DTM usando tf–idf
+------------------------------------
+
+En este tipo de situaciones es conveniente usar la estadística tf-idf (term frequency-inverse document frequency) en vez de la frecuencia de los términos como valor en la matriz DTM. La métrica tf-idf mide la importancia relativa de las palabras en un documento.
 
 ``` r
 review_dtm_tfidf <- DocumentTermMatrix(review_corpus, control = list(weighting = weightTfIdf))
