@@ -14,34 +14,35 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Ajustamos el locale del sistema de acuerdo al OS del computador
-En caso de usar un Mac ejecute la siguiente linea
-```{r}
-Sys.setlocale("LC_ALL", 'en_US.UTF-8')
-```
 
-En caso de usar Windows ejecute la siguiente linea
 ```{r}
-Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+#En caso de usa Mac OS X
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+#En caso de usa Windows
+#Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
 ```
 
 # Instalamos y cargamos las librerías que usaremos
 ```{r}
-install.packages(c('tm', 'SnowballC', 'wordcloud', 'topicmodels'))
-```
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
 
-```{r}
-library(tm)
-library(SnowballC)
-library(wordcloud)
+#  Then try/install packages...
+install_load_library( c('tm', 'SnowballC', 'wordcloud', 'topicmodels') )
 ```
 
 # Lectura de datos
-Usaremos una base de datos que contiene información acerca 
-Next we load the move review dataset
+Usaremos una base de datos que contiene 2 mil críticas de películas de cine. Las críticas están escritas en inglés, fueron  y fueron publicadas por 
 
 ```{r}
-reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_1/data/movie-pang02.csv", stringsAsFactors = F)
-View(reviews)
+reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_1/data/movie_reviews - pang_lee_2004.csv", stringsAsFactors = F)
+#View(reviews)
 ```
 
 El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenido. Transformamos este dataset en un corpus.
@@ -60,12 +61,12 @@ Normalizamos el texto de los reviews aplicando una serie de pasos en el pre proc
 review_corpus = tm_map(review_corpus, content_transformer(tolower))
 review_corpus = tm_map(review_corpus, removeNumbers)
 review_corpus = tm_map(review_corpus, removePunctuation)
-review_corpus = tm_map(review_corpus, removeWords, c("the", "and", stopwords("english")))
+review_corpus = tm_map(review_corpus, removeWords, c("the", "and", "re", "s", stopwords("english")))
 review_corpus =  tm_map(review_corpus, stripWhitespace)
 ```
 
 ```{r}
-inspect(review_corpus[1])
+inspect(review_corpus[3])
 ```
 
 Para analizar datos en forma de texto, usamos una representación del tipo Document-Term Matrix (DTM): Documentos como filas, palabras como columnas, frecuencia de las palabras en el documento como valores. Debido al número de palabras únicas en el corpus esta matriz puede ser muy grande.
@@ -78,7 +79,7 @@ review_dtm
 Inspeccionamos una pequeña sección de esta matriz
 
 ```{r}
-inspect(review_dtm[500:505, 500:505])
+inspect(review_dtm[500:505, 100:105])
 ```
 
 Para reducir la dimnesionalidad de la matriz DTM, podemos eliminar las palabras menos frecuentes. Para ellos usamos la función removeSparseTerms() y el valor 99 para la dispersión.
@@ -104,7 +105,7 @@ Usemos la función wordcloud() para mostrarlas gráficamente
 
 ```{r}
 freq = data.frame(sort(colSums(as.matrix(review_dtm)), decreasing=TRUE))
-wordcloud(rownames(freq), freq[,1], max.words=50, colors=brewer.pal(1, "Dark2"))
+wordcloud(rownames(freq), freq[,1], max.words=100, colors=brewer.pal(8, "Dark2"))
 ```
 
 Un podría argumentar que en la nube de palabras, los términos one, film y movie no son del todo relavantes, pues ya sabemos que el dataset es acerca de películas.
@@ -127,23 +128,9 @@ Generemos una nueva nube de palabras
 
 ```{r}
 freq = data.frame(sort(colSums(as.matrix(review_dtm_tfidf)), decreasing=TRUE))
-wordcloud(rownames(freq), freq[,1], max.words=100, scale = c(4, 0.5), colors=brewer.pal(1, "Dark2"))
+wordcloud(rownames(freq), freq[,1], max.words=30, scale = c(3, 0.3), colors=brewer.pal(8, "Dark2"))
 ```
 
-# Construcción de modelo predictivo
 
-Para predecir la polaridad (sentimiento) de una crítica de película, podemos usar un a lista precompilada de palabras con significado positivo y negativo.
-
-```{r}
-neg_words = read.table("data/negative-words.txt", header = F, stringsAsFactors = F)[, 1]
-pos_words = read.table("data/positive-words.txt", header = F, stringsAsFactors = F)[, 1]
-```
-
-Como un simple indicar, creamos dos campos (neg y pos) que contendrán el número de palabras positivas y negativas que aparecen en cada crítica
-
-```{r}
-reviews$neg = sapply(review_corpus, tm_term_score, neg_words)
-reviews$pos = sapply(review_corpus, tm_term_score, pos_words)
-```
 
 

@@ -1,0 +1,69 @@
+---
+title: "Minería de textos básica"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ajustamos el locale del sistema de acuerdo al OS del computador
+
+```{r}
+#En caso de usa Mac OS X
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+#En caso de usa Windows
+#Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+# Instalamos y cargamos las librerías que usaremos
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+
+#  Then try/install packages...
+install_load_library( c('tm', 'SnowballC', 'wordcloud', 'topicmodels') )
+```
+
+# Lectura de datos
+Usaremos una base de datos que contiene información acerca 
+Next we load the move review dataset
+
+```{r}
+reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_1/data/movie-pang02.csv", stringsAsFactors = F)
+View(reviews)
+```
+
+El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenido. Transformamos este dataset en un corpus.
+
+```{r}
+review_corpus = Corpus(VectorSource(reviews$contenido))
+```
+
+# Construcción de modelo predictivo
+
+Para predecir la polaridad (sentimiento) de una crítica de película, podemos usar un a lista precompilada de palabras con significado positivo y negativo.
+
+```{r}
+neg_words = read.table("data/negative-words.txt", header = F, stringsAsFactors = F)[, 1]
+pos_words = read.table("data/positive-words.txt", header = F, stringsAsFactors = F)[, 1]
+```
+
+Como un simple indicar, creamos dos campos (neg y pos) que contendrán el número de palabras positivas y negativas que aparecen en cada crítica
+
+```{r}
+reviews$neg = sapply(review_corpus, tm_term_score, neg_words)
+reviews$pos = sapply(review_corpus, tm_term_score, pos_words)
+```
