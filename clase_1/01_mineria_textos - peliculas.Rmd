@@ -41,7 +41,7 @@ install_load_library( c('tm', 'SnowballC', 'wordcloud', 'topicmodels') )
 Usaremos una base de datos que contiene 2 mil críticas de películas de cine. Las críticas están escritas en inglés, fueron  y fueron publicadas por 
 
 ```{r}
-reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_1/data/movie_reviews - pang_lee_2004.csv", stringsAsFactors = F)
+reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_1/data/movie_reviews-pang_lee_2004.csv", stringsAsFactors = F)
 #View(reviews)
 ```
 
