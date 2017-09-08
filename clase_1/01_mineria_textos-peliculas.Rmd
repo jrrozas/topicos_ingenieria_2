@@ -37,7 +37,9 @@ install_load_library <- function(x){
 install_load_library( c('tm', 'SnowballC', 'wordcloud', 'topicmodels') )
 ```
 
-# Lectura de datos
+# Preparación y análisis de datos
+
+## Lectura de datos
 Usaremos una base de datos que contiene 2 mil críticas de películas de cine. Las críticas están escritas en inglés, fueron  y fueron publicadas por 
 
 ```{r}
@@ -45,7 +47,9 @@ reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/c
 #View(reviews)
 ```
 
-El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenido. Transformamos este dataset en un corpus.
+## Creación del corpus
+
+El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenido. Usaremos el campo el campo contenido para definir el Corpus (conjunto de documentos).
 
 ```{r}
 review_corpus = Corpus(VectorSource(reviews$contenido))
@@ -68,6 +72,8 @@ review_corpus =  tm_map(review_corpus, stripWhitespace)
 ```{r}
 inspect(review_corpus[3])
 ```
+
+## Creación de matriz DTM
 
 Para analizar datos en forma de texto, usamos una representación del tipo Document-Term Matrix (DTM): Documentos como filas, palabras como columnas, frecuencia de las palabras en el documento como valores. Debido al número de palabras únicas en el corpus esta matriz puede ser muy grande.
 
@@ -95,7 +101,9 @@ Veamos el primer review
 inspect(review_dtm[1,1:20])
 ```
 
-Construyamos una nuebe palabras usando la función findFreqTerms() y usemos solamente las palabras que tienen una frecuencia absoluta de al menos 1000. 
+## Creación de nube de palabras
+
+Construyamos una nube palabras usando la función findFreqTerms() y usemos solamente las palabras que tienen una frecuencia absoluta de al menos 1000. 
 
 ```{r}
 findFreqTerms(review_dtm, 1000)
@@ -110,7 +118,9 @@ wordcloud(rownames(freq), freq[,1], max.words=100, colors=brewer.pal(8, "Dark2")
 
 Un podría argumentar que en la nube de palabras, los términos one, film y movie no son del todo relavantes, pues ya sabemos que el dataset es acerca de películas.
 
-En este tipo de situaciones es conveniente usar la métrica tf-idf (term frequency-inverse document frequency) en vez de la frecuencia de los términos como valor en la matriz DTM. La métrica tf-idf mide la importancia relativa de las palabras en un documento.
+## Creación de matriz DTM usando tf–idf
+
+En este tipo de situaciones es conveniente usar la estadística tf-idf (term frequency-inverse document frequency) en vez de la frecuencia de los términos como valor en la matriz DTM. La métrica tf-idf mide la importancia relativa de las palabras en un documento.
 
 ```{r}
 review_dtm_tfidf <- DocumentTermMatrix(review_corpus, control = list(weighting = weightTfIdf))
