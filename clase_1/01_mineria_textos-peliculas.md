@@ -3,17 +3,17 @@ Minería de textos básica
 Roberto Muñoz
 07 September, 2017
 
--   [Ajustamos el locale del sistema de acuerdo al OS del computador](#ajustamos-el-locale-del-sistema-de-acuerdo-al-os-del-computador)
+-   [Ajustamos el locale del sistema de acuerdo al OS](#ajustamos-el-locale-del-sistema-de-acuerdo-al-os)
 -   [Instalamos y cargamos las librerías que usaremos](#instalamos-y-cargamos-las-librerias-que-usaremos)
 -   [Preparación y análisis de datos](#preparacion-y-analisis-de-datos)
     -   [Lectura de datos](#lectura-de-datos)
-    -   [Creación del corpus](#creacion-del-corpus)
+    -   [Definición del corpus](#definicion-del-corpus)
     -   [Creación de matriz DTM](#creacion-de-matriz-dtm)
     -   [Creación de nube de palabras](#creacion-de-nube-de-palabras)
     -   [Creación de matriz DTM usando tf–idf](#creacion-de-matriz-dtm-usando-tfidf)
 
-Ajustamos el locale del sistema de acuerdo al OS del computador
-===============================================================
+Ajustamos el locale del sistema de acuerdo al OS
+================================================
 
 ``` r
 #En caso de usa Mac OS X
@@ -69,8 +69,8 @@ reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/c
 #View(reviews)
 ```
 
-Creación del corpus
--------------------
+Definición del corpus
+---------------------
 
 El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenido. Usaremos el campo el campo contenido para definir el Corpus (conjunto de documentos).
 
