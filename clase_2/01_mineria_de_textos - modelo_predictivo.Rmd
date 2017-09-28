@@ -42,7 +42,7 @@ Usaremos una base de datos que contiene información acerca
 Next we load the move review dataset
 
 ```{r}
-reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_1/data/movie-pang02.csv", stringsAsFactors = F)
+reviews = read.csv("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_1/data/movie_reviews-pang_lee_2004.csv", stringsAsFactors = F)
 View(reviews)
 ```
 
@@ -50,7 +50,14 @@ El dataset review dataset contiene dos campos: valoracion (Pos y Neg) y contenid
 
 ```{r}
 review_corpus = Corpus(VectorSource(reviews$contenido))
+class(review_corpus)
 ```
+
+```{r}
+tdm <- TermDocumentMatrix(review_corpus)
+class(tdm)
+```
+
 
 # Construcción de modelo predictivo
 
@@ -64,6 +71,116 @@ pos_words = read.table("data/positive-words.txt", header = F, stringsAsFactors =
 Como un simple indicar, creamos dos campos (neg y pos) que contendrán el número de palabras positivas y negativas que aparecen en cada crítica
 
 ```{r}
-reviews$neg = sapply(review_corpus, tm_term_score, neg_words)
-reviews$pos = sapply(review_corpus, tm_term_score, pos_words)
+reviews$neg = tm_term_score(tdm, neg_words)
+  #sapply(review_corpus, tm_term_score, neg_words)
+reviews$pos = tm_term_score(tdm, pos_words)
+  #sapply(review_corpus, tm_term_score, pos_words)
 ```
+
+Visualizamos la variable reviews
+
+```{r}
+View(reviews)
+```
+
+Borramos el campo contenido pues construiremos un modelo estadísitico usando solo campos simples
+
+```{r}
+reviews$contenido = NULL
+```
+
+
+En este tipo de situaciones es conveniente usar la estadística tf-idf (term frequency-inverse document frequency) en vez de la frecuencia de los términos como valor en la matriz DTM. La métrica tf-idf mide la importancia relativa de las palabras en un documento.
+
+```{r}
+review_dtm_tfidf <- DocumentTermMatrix(review_corpus, control = list(weighting = weightTfIdf))
+review_dtm_tfidf = removeSparseTerms(review_dtm_tfidf, 0.95)
+review_dtm_tfidf
+```
+
+Combinamos la matriz tf-idf con el análisis de sentimiento de acuerdo a la lista de valoracion
+```{r}
+reviews = cbind(reviews, as.matrix(review_dtm_tfidf))
+reviews$valoracion = as.factor(reviews$valoracion)
+```
+
+Dividimos los datos en un dataset de entrenamiento y otro para testing
+
+```{r}
+id_train <- sample(nrow(reviews), nrow(reviews)*0.8)
+reviews.train = reviews[id_train,]
+reviews.test = reviews[-id_train,]
+```
+
+```{r}
+cat("Numero de registros en train: ", nrow(reviews.train), "\n")
+cat("Numero de registros en test: ", nrow(reviews.test), "\n")
+```
+
+Instalamos y cargamos las librerías de logistic regression, decision tree, SVM, y neural network models.
+
+```{r}
+install_load_library( c('rpart', 'rpart.plot', 'e1071', 'nnet') )
+```
+
+Entrenemos los modelos
+
+```{r}
+reviews.tree = rpart(valoracion~.,  method = "class", data = reviews.train);
+prp(reviews.tree)
+```
+
+```{r}
+reviews.glm = glm(valoracion~ ., family = "binomial", data =reviews.train, maxit = 100);  
+reviews.svm = svm(valoracion~., data = reviews.train);
+reviews.nnet = nnet(valoracion~., data=reviews.train, size=1, maxit=500, MaxNWts=1100)
+```
+
+Evaluemos el performance usando el dataset de entrenamiento. Partimos con los arboles de decisión
+
+```{r}
+pred.tree = predict(reviews.tree, reviews.test,  type="class")
+table(reviews.test$valora,pred.tree,dnn=c("Obs","Pred"))
+```
+
+```{r}
+mean(ifelse(reviews.test$valoracion != pred.tree, 1, 0))
+```
+
+Seguimos con regresión logística
+
+```{r}
+pred.glm = as.numeric(predict(reviews.glm, reviews.test, type="response") > 0.5)
+pred.glm = ifelse(pred.glm==1,"Positiva","Negativa")
+table(reviews.test$valoracion,pred.glm,dnn=c("Obs","Pred"))
+```
+
+```{r}
+mean(ifelse(reviews.test$valoracion != pred.glm, 1, 0))
+```
+
+Seguimos con modelo SVM
+
+```{r}
+pred.svm = predict(reviews.svm, reviews.test)
+table(reviews.test$valoracion,pred.svm,dnn=c("Obs","Pred"))
+```
+
+```{r}
+mean(ifelse(reviews.test$valoracion != pred.svm, 1, 0))
+```
+
+Seguimos con la red neuronal
+
+```{r}
+prob.nnet= predict(reviews.nnet,reviews.test)
+pred.nnet = as.numeric(prob.nnet > 0.5)
+pred.nnet = ifelse(pred.nnet==1,"Positiva","Negativa")
+table(reviews.test$valoracion, pred.nnet, dnn=c("Obs","Pred"))
+```
+
+```{r}
+mean(ifelse(reviews.test$valoracion != pred.nnet, 1, 0))
+```
+
+
