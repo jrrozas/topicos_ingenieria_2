@@ -45,7 +45,7 @@ Nuestro interés está en el contenido de este libro y no en los avisos legales 
 Realizamos estas operaciones y asignamos el resultado al objeto libro_raw.
 
 ```{r}
-libro_raw <- read_lines("data/Niebla-Miguel_de_unamuno.txt", skip = 419, n_max = 8313-419)
+libro_raw <- read_lines("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_3/data/Niebla-Miguel_de_unamuno.txt", skip = 419, n_max = 8313-419)
 ```
 
 El objeto libro_raw que obtuvimos es del tipo character con 7894 elementos.
@@ -60,28 +60,31 @@ Cada uno de estos elementos corresponde a una línea de Niebla y tiene ancho má
 
 Una manera de crear párrafos completos es editando el texto original y eliminando los saltos de línea. Existen más de 2 mil párrafos en el texto, por lo cual nos tomaría tiempo editarlo manualmente.
 
-Otra manera es unir 10 líneas y crear párrafos.  Creamos un vector llamado diez con 10 repeticiones de los números desde 1 hasta el número de renglones en el documento, dividido entre 10 (length(nov_raw)/10.
+Otra manera es unir 10 líneas y crear párrafos.  Creamos un vector llamado diez con 10 repeticiones de los números desde 1 hasta el número de líneas en el documento, dividido entre 10 (length(nov_raw)/10.
 
-Con esto, tendremos un vector con diez 1, luego diez 2, etc, hasta llegar al número máxico de grupos de diez posibles en función del número de renglones de nuestro documento.
+Con esto, tendremos un vector con diez 1, luego diez 2, etc, hasta llegar al número máximo de grupos de diez posibles en función del número de líneas de nuestro documento.
 
 Usaremos estos números para hacer grupos de diez líneas consecutivas.
 
 ```{r}
 diez <- rep(1:ceiling(length(libro_raw)/10), each = 10)
+diez
 ```
 
-De este vector, nos quedamos con un número de elementos igual al número de renglones del objeto nov_raw (length(nov_raw)), para facilitar combinarlos.
+De este vector, nos quedamos con un número de elementos igual al número de líneas del objeto nov_raw (length(nov_raw)), para facilitar combinarlos.
 
 ```{r}
 diez <- diez[1:length(libro_raw)]
+diez
 ```
 
-Combinamos diez con libro_raw y los asignamos al objeto libro_text. Así tenemos una columna con las líneas de texto y otra con un número que identifica a qué grupo de diez renglones pertenece.
+Combinamos diez con libro_raw y los asignamos al objeto libro_text. Así tenemos una columna con las líneas de texto y otra con un número que identifica a qué grupo de diez líneas pertenece.
 
 Además, convertimos a data.frame para que las columnas estén identificadas con un nombre, lo cual será útil en los siguientes pasos.
 
 ```{r}
 libro_text <- cbind(diez, libro_raw) %>% data.frame()
+libro_text
 ```
 
 Usamos aggregate para concatenar las líneas (FUN = paste, con collapse = " " para preservar el espacio entre palabras), agrupados por diez (formula = libro_raw ~ diez).
@@ -91,12 +94,15 @@ libro_text <- aggregate(formula = libro_raw ~ diez,
                       data = libro_text,
                       FUN = paste,
                       collapse = " ")
+View(libro_text)
 ```
 
-Como sólo necesitamos la columna con los ahora párrafos de texto, con eso nos quedamos. Aprovechamos para transformar libro_text en una matriz, pues esto nos facilitará los pasos siguientes.
+Como sólo necesitamos la columna con los ahora párrafos de texto, extraemos solola columna libro_raw. Aprovechamos para transformar libro_text en una matriz, pues esto nos facilitará los pasos siguientes. En total debiésemos tener 790 párrafos.
 
 ```{r}
-libro_text <- libro_text %>% select(libro_raw) %>% as.matrix
+libro_text %>%
+  select(libro_raw) %>%
+  as.matrix -> libro_text
 dim(libro_text)
 ```
 
@@ -115,6 +121,13 @@ libro_text <- removeNumbers(libro_text)
 libro_text <- stripWhitespace(libro_text)
 ```
 
+Visualizamos el texto luego de haberlo limpiado
+
+```{r}
+View(libro_text)
+```
+
+
 ## Análisis del Corpus
 
 Con nuestro documento preparado, procedemos a crear nuestro Corpus, es decir, esto es nuestro acervo de documentos a analizar.
@@ -126,7 +139,7 @@ libro_corpus <- Corpus(VectorSource(libro_text))
 libro_corpus
 ```
 
-Como podemos ver, nustro Copus está compuesto por 790 documentos. Los siguientes análisis se harán a partir de este Corpus.
+Como podemos ver, nuestro Copus está compuesto por 790 documentos. Los siguientes análisis se harán a partir de este Corpus.
 
 ## Nube de palabras
 
@@ -166,34 +179,40 @@ libro_corpus <- libro_text %>% VectorSource() %>% Corpus()
 ```{r}
 libro_dtm <- DocumentTermMatrix(libro_corpus)
 libro_dtm = removeSparseTerms(libro_dtm, 0.99)
+libro_dtm
 
 freq = data.frame(sort(colSums(as.matrix(libro_dtm)), decreasing=TRUE))
 wordcloud(rownames(freq), freq[,1], max.words=80, random.order = F, colors=brewer.pal(8, "Dark2"))
 ```
 
-## Term Document Matrix
+## Term Document Matrix y Frecuencia de palabras
 
-Usaremos la función TermDocumentMatrix en nuestro Corpus y asignaremos el resultado al objeto nov_tdm.
+Mapearemos nuestro Corpus indicando que es una matriz de términos, de esta manera podremos hacer realizar operaciones como identificar asociaciones entre palabras.
+
+Usaremos la función TermDocumentMatrix en nuestro Corpus y asignaremos el resultado al objeto libro_tdm.
 
 ```{r}
 libro_tdm <- TermDocumentMatrix(libro_corpus)
 libro_tdm
 ```
 
+Creamos la variable libro_mat que almacena libro_tdm como matriz
 
 ```{r}
 libro_mat <- as.matrix(libro_tdm)
 dim(libro_mat)
+View(libro_mat)
 ```
 
-Obtenemos las sumas de renglones (rowSums) odenadas de mayor a menor (sort con decreasing = TRUE)para conocer la frecuencia de cada palabra y después transformamos los resultados a objeto de clase data.frame de dos columnas, palabra y frec, que nos permitirá graficar fácilmente su contenido.
+Obtenemos las sumas de líneas (rowSums) odenadas de mayor a menor (sort con decreasing = TRUE) para conocer la frecuencia de cada palabra y después transformamos los resultados a objeto de clase data.frame de dos columnas, palabra y frec, que nos permitirá graficar fácilmente su contenido.
 
 ```{r}
-libro_mat <- libro_mat %>% rowSums() %>% sort(decreasing = TRUE)
-libro_mat <- data.frame(palabra = names(libro_mat), frec = libro_mat)
+libro_mat %>% rowSums() %>% sort(decreasing = TRUE) -> libro_mat
+data.frame(palabra = names(libro_mat), frec = libro_mat) -> libro_mat
+View(libro_mat)
 ```
 
-Además, podemos obtener fácilmente las palabras más frecuentes. Por ejemplo, las veinte más frecuentes, pidiendo los primeros veinte renglones de nov_mat.
+Además, podemos obtener fácilmente las palabras más frecuentes. Por ejemplo, las veinte más frecuentes, pidiendo los primeras veinte líneas de libro_mat.
 
 ```{r}
 libro_mat[1:20, ]
@@ -214,6 +233,79 @@ libro_mat[1:10, ] %>%
   labs(title = "Diez palabras más frecuentes en Niebla",  x = "Palabras", y = "Número de usos")
 ```
 
+La misma información expresada como proporción de uso cada palabra. Para esta gráfica usamos la función mutate de dplyr para obtener el porcentaje de uso de cada palabra antes de graficar.
+
+```{r}
+libro_mat %>%
+  mutate(perc = (frec/sum(frec))*100) %>%
+  .[1:10, ] %>%
+  ggplot(aes(palabra, perc)) +
+  geom_bar(stat = "identity", color = "black", fill = "#87CEFA") +
+  geom_text(aes(hjust = 1.3, label = round(perc, 2))) + 
+  coord_flip() +
+  labs(title = "Diez palabras más frecuentes en Niebla", x = "Palabras", y = "Porcentaje de uso")
+```
+
 ## Asociaciones entre palabras
 
+Veamos ahora cómo se asocian algunas palabras (terms) en Niebla con la función findAssocs. Como podemos introducir un vector, podemos obtener las asociaciones de varias palabras a la vez. He elegido "augusto", "eugenia", "hombre" y "mujer".
 
+Es importante recordar que con esto no estamos pidiendo la asociacion de estas cuatro palabras entre si, sino las asociaciones para cada una de las cuatro, que no necesariamente deben coincidir.
+
+Esta también nos pide el límite inferior de correlación (corlimit) para mostrarnos. Valores cercanos a 1 indican que las palabras aparecen casi siempre asociadas una con otra, valores cercanos a 0 nos indican que nunca o casi nunca lo hacen.
+
+El valor que decidamos depende del tipo de documento y el tipo de asociaciones que nos interesen. para nuestros fines, lo he fijado en .25.
+
+```{r}
+findAssocs(libro_tdm, terms = c("augusto", "eugenia", "hombre", "mujer"), corlimit = .25)
+```
+
+Aunque “augusto” es la palabra más frecuente en Niebla no tiene relaciones tan fuertes como las demás palabras que elegimos. De hecho, no tiene ninguna superior a .25, por eso el resultado mostrado.
+
+A partir de estos resultados podemos observar algunas cosas, por ejemplo, que "hombre" está asociada con adjetivos negativos, que "mujer" se asocia con palabras que hacen alusión a fuego y explosiones, y que "lucharemosiba" aparece como una palabra, que nos indica que sería buena idea realizar aún más limpieza en nuestro corpus.
+
+# Agrupamiento jerárquico (Hierarchical clustering)
+
+Realizaremos análisis de agrupaciones jerárquicas para identificar grupos de palabras relacionados entre sí, a partir de la distancia que existe entre ellos.
+
+Empezaremos por eliminar los términos dispersos en nuestra matriz de términos, para así conservar únicamente las palabras más frecuentes y obtener resultados más interpretables del agrupamiento.
+
+## Eliminar términos dispersos
+
+Usaremos las función removeSparseItems para depurar nuestra matriz de términos de aquellas palabras que aparecen con muy poca frecuencia, es decir, son dispersos ("sparse").
+
+Qué valor fijemos depende del tipo de documento que tengamos, por lo que es aconsejable realizar ensayos hasta encontrar un equilibrio entre dispersión y número de términos. En este caso, he decidido fijarlo en .95 y guardaremos la nueva matriz de términos en el objeto nov_new
+
+```{r}
+libro_new <- removeSparseTerms(libro_tdm, sparse = .95)
+```
+
+Comparamos cuántos términos teníamos originalmente y con cuántos nos hemos quedado, observando a cuánto equivale terms.
+
+```{r}
+libro_tdm
+```
+
+```{r}
+libro_new
+```
+
+De 6927 términos que teníamos, nos hemos quedado con 45, lo cual reduce en gran medida la dificultad y complejidad de los agrupamientos, lo cual es deseable. Es poco útil tener agrupaciones que son únicamente visualizaciones del texto original.
+
+También podemos ver el número de términos pidiéndo el número de renglones de nuestra matriz de términos, que es igual al número de palabras que contiene.
+
+```{r}
+libro_tdm$nrow
+```
+
+```{r}
+libro_new$nrow
+```
+
+Transformamos esta matriz de términos a un objeto de tipo matrix para así poder realizar las operaciones posteriores.
+
+```{r}
+libro_new <- libro_new %>% as.matrix()
+```
+
+# Matriz de distancia
