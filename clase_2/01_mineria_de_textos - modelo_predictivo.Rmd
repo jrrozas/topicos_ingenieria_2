@@ -64,8 +64,8 @@ class(tdm)
 Para predecir la polaridad (sentimiento) de una crítica de película, podemos usar un a lista precompilada de palabras con significado positivo y negativo.
 
 ```{r}
-neg_words = read.table("data/negative-words.txt", header = F, stringsAsFactors = F)[, 1]
-pos_words = read.table("data/positive-words.txt", header = F, stringsAsFactors = F)[, 1]
+neg_words = read.table("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_2/data/negative-words.txt", header = F, stringsAsFactors = F)[, 1]
+pos_words = read.table("https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_2/data/positive-words.txt", header = F, stringsAsFactors = F)[, 1]
 ```
 
 Como un simple indicar, creamos dos campos (neg y pos) que contendrán el número de palabras positivas y negativas que aparecen en cada crítica
