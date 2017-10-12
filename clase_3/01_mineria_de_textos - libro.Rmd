@@ -260,7 +260,7 @@ El valor que decidamos depende del tipo de documento y el tipo de asociaciones q
 findAssocs(libro_tdm, terms = c("augusto", "eugenia", "hombre", "mujer"), corlimit = .25)
 ```
 
-Aunque “augusto” es la palabra más frecuente en Niebla no tiene relaciones tan fuertes como las demás palabras que elegimos. De hecho, no tiene ninguna superior a .25, por eso el resultado mostrado.
+Aunque "augusto" es la palabra más frecuente en Niebla no tiene relaciones tan fuertes como las demás palabras que elegimos. De hecho, no tiene ninguna superior a .25, por eso el resultado mostrado.
 
 A partir de estos resultados podemos observar algunas cosas, por ejemplo, que "hombre" está asociada con adjetivos negativos, que "mujer" se asocia con palabras que hacen alusión a fuego y explosiones, y que "lucharemosiba" aparece como una palabra, que nos indica que sería buena idea realizar aún más limpieza en nuestro corpus.
 
@@ -309,3 +309,79 @@ libro_new <- libro_new %>% as.matrix()
 ```
 
 # Matriz de distancia
+
+Necesitamos crear una matriz de distancias para empezar agrupar, lo cual requiere que los valores en las celdas sean estandarizados de alguna manera.
+
+Podríamos usar la función scale, pero realiza la estandarización usando la media de cada columna como referencia, mientras que nosotros necesitamos como referencia la media de cada renglón.
+
+Así que obtenemos una estandarización por renglones de manera manual.
+
+```{r}
+libro_new <- libro_new / rowSums(libro_new)
+```
+
+Hecho esto, nuestra matriz ha sido estandarizada.
+
+Procedemos a obtener una matriz de distancia a partir de ella, con el método de distancias euclidianas y la asignamos al objeto nov_dist.
+
+```{r}
+libro_dist <- dist(libro_new, method = "euclidian")
+```
+
+# Clustering
+
+Realizaremos nuestro agrupamiento jerárquico usando la función hclust, de la base de R. Este es en realidad un procedimiento muy sencillo una vez que hemos realizado la preparación.
+
+Usaremos el método de Ward (ward.D), que es el método por defecto de la función hclust y asignaremos sus resultados al objeto libro_hclust.
+
+```{r}
+libro_hclust <-  hclust(libro_dist, method = "ward.D")
+```
+
+Graficamos los resultados usando plot para generar un dendrograma.
+
+```{r}
+plot(libro_hclust, main = "Dendrograma de Niebla - hclust", sub = "", xlab = "")
+```
+
+De este modo podemos observar los grupos de palabras que existen en Niebla. Por ejemplo, "augusto" y "eugenia" forman un grupo, "puede" y "ser", forman otro grupo ("puede ser" es una frase común en este libro).
+
+Además, podemos ver qué palabras pertenecen a grupos lejanos entre sí, por ejemplo, "quiero" y "verdad".
+
+Podemos enfatizar los grupos de palabras trazando un rectángulo usando rect.hclust y con especificando cuántos grupos (k) deseamos resaltar.
+
+Crearemos el mismo gráfico pidiendo diez grupos.
+
+```{r}
+{plot(libro_hclust, main = "Dendrograma de Niebla - hclust", sub = "", xlab = "")
+rect.hclust(libro_hclust, k = 10, border="blue")}
+```
+
+# Agnes (Agglomerative Nesting)
+
+El paquete cluster nos proporciona más métodos para realizar agrupamientos. Uno de ellos es agnes, que inicia asumiendo que cada elemento a agrupar por si mismo es un grupo y después crea grupos de grupos a partir de las distancias entre ellos, hasta que no es posible crear más grupos.
+
+Realizamos prácticamente el mismo procedimiento que con hclust, sólo cambiamos el método a average. Asignaremos nuestros resultados al objeto libro_agnes.
+
+```{r}
+libro_agnes <- agnes(libro_dist, method = "average")
+```
+
+Ahora graficamos nuestros resultados. Un agrupamiento creado con agnes genera dos gráficos, el primero muestra cómo se obtuvieron los grupos finales y el segundo es un dendrograma.
+
+Pediremos el segundo gráfico (which.plots = 2).
+
+```{r}
+plot(libro_agnes, which.plots = 2, main = "Dendrograma de Niebla - Agnes", sub = "", xlab = "")
+```
+
+Enfatizamos diez grupos.
+
+```{r}
+{plot(libro_agnes, which.plots = 2, main = "Dendrograma de Niebla - Agnes", sub = "", xlab = "")
+rect.hclust(libro_agnes, k = 10, border = "blue")}
+```
+
+Las agrupaciones que hemos obtenido usando hclust y agnes son diferentes entre sí. La decisión de qué método usemos depende de nuestros propósitos y de nuestra familiaridad con ellos.
+
+
