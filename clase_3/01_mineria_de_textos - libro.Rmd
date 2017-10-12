@@ -38,6 +38,8 @@ library(cluster)
 # Lectura y preparación del texto
 El texto con el que trabajeremos es el texto del libro Niebla de Miguel de Unamuno, el cual puede ser descargado de la biblioteca digital Gutenberg.
 
+El libro Niebla fue publicado el año 1914 y cuenta ls historia de Augusto Pérez, una persona que tiene una vida muy rutinaria y tranquila. Comienza a cuestionar cada uno de los aspectos de su vida: se pregunta si alguien sabe lo que es amar, qué es vivir y cuál es la finalidad de la existencia, entre otros temas. 
+
 Nuestro interés está en el contenido de este libro y no en los avisos legales de Gutenberg, prólogo y anotaciones, así que los omitiremos de la lectura. Empezaremos a leer el documento desde la línea 420, que es donde termina el prólogo, introducción e índice de Niebla, para ello nos saltaremos (skip) 419 líneas previas. De manera complementaria, detendremos la lectura en la línea 8313, que es donde inician los avisos legales de Gutenberg, por lo tanto leeremos un máximo (nmax) de 8313-419 líneas.
 
 Realizamos estas operaciones y asignamos el resultado al objeto libro_raw.
