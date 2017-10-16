@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Ajustamos el locale del sistema de acuerdo al OS del computador
@@ -26,13 +26,16 @@ Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
 
 # Cargamos las librerías que usaremos en el script
 ```{r}
-library(tm)
-library(SnowballC)
-library(wordcloud)
-library(ggplot2)
-library(dplyr)
-library(readr)
-library(cluster)
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+
+install_load_library( c('tm','SnowballC','wordcloud','ggplot2','dplyr','readr','cluster') )
 ```
 
 # Lectura y preparación del texto
@@ -75,7 +78,6 @@ De este vector, nos quedamos con un número de elementos igual al número de lí
 
 ```{r}
 diez <- diez[1:length(libro_raw)]
-diez
 ```
 
 Combinamos diez con libro_raw y los asignamos al objeto libro_text. Así tenemos una columna con las líneas de texto y otra con un número que identifica a qué grupo de diez líneas pertenece.
@@ -84,7 +86,7 @@ Además, convertimos a data.frame para que las columnas estén identificadas con
 
 ```{r}
 libro_text <- cbind(diez, libro_raw) %>% data.frame()
-libro_text
+View(libro_text)
 ```
 
 Usamos aggregate para concatenar las líneas (FUN = paste, con collapse = " " para preservar el espacio entre palabras), agrupados por diez (formula = libro_raw ~ diez).
