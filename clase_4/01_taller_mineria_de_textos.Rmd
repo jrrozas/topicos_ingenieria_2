@@ -1,0 +1,63 @@
+---
+title: "Taller evaluado de minería de textos"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+# Nombres de integrantes
+Integrante 1:
+Integrante 2:
+Integrante 3:
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+# Cargamos las librerías que usaremos en el script
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+
+install_load_library( c('tm','SnowballC','wordcloud','ggplot2','dplyr','readr','cluster') )
+```
+
+# Actividad 1
+
+1. Busque y descargue una copia digital de algún libro de interés desde el sitio web del proyecto Gutenberg (https://www.gutenberg.org/browse/languages/es). Haga click en libro y luego elija el formato "Plain Text UTF-8", el cual permitirá desargar un archivo de texto plano con el contenido del libro. Guarde el libro en la variable libro_raw.
+
+2. Una desventaja del formato en texto plano es que los párrafos están disgregados en una serie de líneas. En general, los Corpus de un libro se construyen definiendo cada párrafo como un documento. Agrupe las líneas en párrafos, ya se de manera artificial (número arbitrario de líneas) o implementando un algoritmo que remueva los saltos de línea. Guarde el resultado en la variable libro_text como tipo data.frame .
+
+3. Limpie el texto guardado en la variable libro_text eliminando los espacios en blanco, los signos de puntuación, las palabras vacías (stop words), los números y transformando todo el texto en minúsculas. Guarde esta variable como libro_text.
+
+4. Genere una nube de palabras a partir del análisis de frecuencia de las palabras que aparece en el libro. Use la función DocumentTermMatrix y utilice las funciones de peso weightTf y weightTfIdf. Para mayor claridad, almacene la matriz DTM construida con el peso weightTf como libro_dtm_tf y la constuida con el peso weightTfIdf como libro_dtm_tfidf.
+
+# Actividad 2
+
+1. Realice un análisis de sentimientos con el archivo disponible en la carpeta data/mobile_phone_reviews.csv. El campo contenido contiene el comentario y el campo valoracion contiene la evaluación (1: positiva, 0:neutra, -1:negativa)
+
+2. Separe los datos entre un 80% de entrenamiento y un 20% de evaluación. Entre un modelo usando SVM y otro modelo usando regresión logísitica.
+
+3. ¿Cual de los dos modelos anteriores entrega un accuracy mayor?
+
