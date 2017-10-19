@@ -55,7 +55,7 @@ install_load_library( c('tm','SnowballC','wordcloud','ggplot2','dplyr','readr','
 
 # Actividad 2
 
-1. Realice un análisis de sentimientos con el archivo disponible en la carpeta data/mobile_phone_reviews.csv. El campo contenido contiene el comentario y el campo valoracion contiene la evaluación (1: positiva, 0:neutra, -1:negativa)
+1. Realice un análisis de sentimientos con el archivo disponible en la carpeta data/mobile_phone_reviews.csv (https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_4/data/mobile_phone_reviews.csv). El campo contenido contiene el comentario y el campo valoracion contiene la evaluación (1: positiva, 0:neutra, -1:negativa)
 
 2. Separe los datos entre un 80% de entrenamiento y un 20% de evaluación. Entre un modelo usando SVM y otro modelo usando regresión logísitica.
 
