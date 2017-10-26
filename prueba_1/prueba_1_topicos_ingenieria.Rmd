@@ -1,0 +1,54 @@
+---
+title: "Prueba 1: Topicos de especializacion 2"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+# Nombres de integrantes
+Nombre y Apellido:
+
+# Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+# Cargamos las librerías que usaremos en el script
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+
+install_load_library( c('tm','SnowballC','wordcloud','ggplot2','dplyr','readr','cluster') )
+```
+
+# Actividad 1
+
+1. Realice un análisis de sentimientos con el archivo disponible en la carpeta data/movie_review_dataset.csv (https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/prueba_1/data/movie_review_dataset.csv).
+
+Este dataset está basada en las críticas de películas publicadas en el sitio web Rotten Tomatoes (http://www.rottentomatoes.com/). El campo Phrase contiene el texto de cada crítica y el campo Sentiment contiene la valoración numérica que va desde 0 hasta 4. El significado de cada número es el siguiente,
+
+0: negativa
+1: levemente negativa
+2: neutra
+3: levemente positiva
+4: positiva
+
+2. Separe los datos entre un 80% de entrenamiento y un 20% de evaluación. Entre un modelo usando SVM y otro modelo usando regresión logísitica.
+
+3. ¿Cual de los dos modelos anteriores entrega un accuracy mayor?
