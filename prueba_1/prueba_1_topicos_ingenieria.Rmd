@@ -49,6 +49,10 @@ Este dataset está basada en las críticas de películas publicadas en el sitio 
 3: levemente positiva
 4: positiva
 
-2. Separe los datos entre un 80% de entrenamiento y un 20% de evaluación. Entre un modelo usando SVM y otro modelo usando regresión logísitica.
+Parta leyendo este archivo usando read_csv y use como caracter separador el simbolo '|'
 
-3. ¿Cual de los dos modelos anteriores entrega un accuracy mayor?
+2. Separe los datos entre un 80% de entrenamiento y un 20% de evaluación. Defina data_train y data_test.
+
+3. Entre un modelo usando SVM y otro modelo usando regresión logísitica. Parta con un modelo simple, separando entre positivo y negativo. Luego construya otro modelo que considere las cinco clases, que van desde 0 hasta 4.
+
+4. ¿Cual de los dos modelos anteriores entrega un accuracy mayor?
