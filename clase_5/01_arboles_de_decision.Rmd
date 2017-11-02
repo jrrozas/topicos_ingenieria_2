@@ -1,0 +1,145 @@
+---
+title: "01_arboles_de_decision"
+author: "Roberto Muñoz"
+date: "11/2/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+# Cargamos las librerías que usaremos en el script
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+
+install_load_library( c('rpart','dplyr') )
+```
+
+Usaremos el dataset Titanic de R, el cual contiene información acerca de la suerte que corrieron los pasajeros del trasantlántico Titanic. Contiene campos como la clase del ticket, sexo, edad y sobrevivencia.
+
+Survived: Indica si pasajero sobrevivió. 0= No sobrevivió, 1= Sí sobrevivió
+Pclass: Clase del ticket. 1= primera clase, 2= segunda clase, 3= tercera clase
+Sex: Sexo
+Age: Edad
+SibSp: Numero de hermanos(as) / Numero de esposos(as) a bordo
+Parch: Numero de padres / Numero de hijos a bordo
+Ticket: Numero del ticket
+Fae: Tarifa del ticket
+Cabin: Numero de la cabina
+Embarked: Puerto donde embarcó.	C = Cherbourg, Q = Queenstown, S = Southampton 
+
+
+```{r}
+titanic_train <- read.csv('https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_5/data/titanic_train.csv')
+View(titanic_train)
+```
+
+El formato del comando rpart se parece a la función aggregate. Necesitamos ingresa la ecuación, primero la variable de interes y luego seguida por las variables usadas en la predicción. Indicamos la variable que contiene los datos (titanic) y usamos el metodo clase para predeicir variables discretas. 
+
+```{r}
+fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+               data=titanic_train,
+               method="class")
+```
+
+Examinamos el arbol resultante. Usamos las funciones que viene por defecto en R.
+
+```{r}
+plot(fit)
+text(fit)
+```
+
+Podemos ver que la visualización no es muy bonita, por lo cual usaremos el paquete rattle, rpart.plot y RColorBrewer.
+
+```{r}
+install_load_library( c('rattle','rpart.plot','RColorBrewer') )
+```
+
+Visualizamos nuevamente el árbol, esta vez usando la función fancyRpartPlot.
+
+```{r}
+fancyRpartPlot(fit)
+```
+
+Ok, la visualización es mejor. El árbol de decisiones lleva muy profundo. Se encontraron decisiones para la variable SibSp, y también para el puert de embarque. Podemos ver que para el sexo masculino, los niños menores de 6 años tienen mejores chances de sobrevivir, incluso si no habían tantos a bordo.
+
+Para hacer predicciones a partir de este árbol, requerimos crear un subset.
+
+```{r}
+titanic_test <- read.csv('https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_5/data/titanic_test.csv')
+View(titanic_test)
+```
+
+Grabaremos el resultado del modelo y lo subiremos a la página web de Kaggle
+https://www.kaggle.com/c/titanic/
+
+```{r}
+Prediction <- predict(fit, titanic_test, type = "class")
+submit <- data.frame(PassengerId = titanic_test$PassengerId, Survived = Prediction)
+dir.create('results')
+write.csv(submit, file = "results/titanic_arbol_decision.csv", row.names = FALSE)
+View(submit)
+```
+
+Veamos el resultado de subirlo al boton "Submit predictions" de Kaggle https://www.kaggle.com/c/titanic/submit
+
+El paquete rpart automáticamente corta la profundidad del árbol usando una metrica llamada complejidad, la cual detiene el modelo cuando la complejidad crece demasiado. Ya vimos que un modelo más complejo logra mejores resultados, y por ahora solo estamos usando los valores por defecto.
+
+Se pueden cambiar los parámetros por defecto usando rpart.control. El primer parámetro que queremos mejorar es cp, el cual es una métrica que permite detener las divisiones que no son tan relevantes. El otro parámetro que queremos mejorar es minsplit, el cual controla cuantos pasajeros se pueden ubicar en un puesto antes de ser divididos. Maximizemos ambos y reduzcaos el valor de cp a 0 y minsplit a 2 (no se harán divisiones para un pasajero usando un solo asiento).
+
+```{r}
+fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+               data=titanic_train,
+               method="class", 
+               control=rpart.control(minsplit=2, cp=0))
+fancyRpartPlot(fit)
+```
+
+Ok, ahora veamos el resultado que obtenemos al grabar la predicción y enviarla a Kaggle
+
+```{r}
+Prediction <- predict(fit, titanic_test, type = "class")
+submit <- data.frame(PassengerId = titanic_test$PassengerId, Survived = Prediction)
+dir.create('results')
+write.csv(submit, file = "results/titanic_arbol_decision.csv", row.names = FALSE)
+View(submit)
+```
+
+¿Es el valor mejor o peor que el anterior?
+Podemos ver que el podemo simple dio mejor resultados. Bienvenido al overfitting.
+
+Debemos ser cuidadoso con los arboles de decisión, pues podemos comenzar a crear reglas a partir del ruido que confundimos como señal.
+
+Comience a experimentar con diferentes valores de rpart.control, use help(rpart.control)
+Quizás encuentre algun arbol que mejore respecto a los anteriores, ya sea aumentando la profundidad o podando algunas ramas. Ejecute los siguientes comandos
+
+```{r}
+fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+               data=titanic_train,
+               method="class",
+               control=rpart.control("Escribir aquí los parámetros"))
+new.fit <- prp(fit,snip=TRUE)$obj
+fancyRpartPlot(new.fit)
+```
+
+
+
+
