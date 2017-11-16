@@ -1,0 +1,74 @@
+---
+title: "Taller evaluado arboles de decision"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+# Nombres de integrantes
+Integrante 1:
+Integrante 2:
+Integrante 3:
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+## Creamos funcion para cargar facilmente librerías de R
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+```
+
+## Usaremos principalmente las librerias rpart y dplyr
+```{r}
+install_load_library( c('rpart','dplyr') )
+```
+
+
+# Actividad
+
+1. Lea el archivo "indicadores_jugadores_NBA.txt" que está disponible en la carpeta data y guarde la información en un dataframe de R. Para entender cada columna, abra el archivo y lea el encabezado. El nombre del dataframe debe ser nba.
+
+```{r}
+'https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_6/data/indicadores_jugadores_NBA.txt'
+```
+
+
+
+2. Divida el conjunto de datos nba en dos: Uno que usará para el entrenamiento (train, 70% de los datos) y otro que usará para evaluar el rendimiento del modelo (test, 30% de los datos). Al conjunto de entrenamiento llámelo nba_train y al de evaluación nba_test
+
+3. Entrene un modelo de árbol de decisión usando el dataset nba_train y donde el campo a predecir es el tipo de jugador (columna Class). Use todos los campos del archivo para crear el modelo y los parámetros por defecto de rpart. Recuerde usar la función rpart() para crear el modelo. Llame a este modelo nba_model1
+
+4. Aplique el modelo recién creado (nba_model1) sobre el dataset nba_test. Recuerde usar la función predict() para obtener la predicción de la columna class y la función table() para determinar la matriz de confusión. Revise el código R de la clase 2 del curso.
+
+5. Cree un gráfico del árbol de decisión del modelo nba_model1. Use la función rpart.plot (Busque en la ayuda como se emplea)
+
+6. Interprete el modelo obtenido. ¿Cuál es el atributo (columna) más discriminante del modelo? ¿Tiene sentido que este atributo sea el más importante?
+
+7. Entrene un nuevo modelo de árbol de decisión usando nba_model2, pero esta vez cambiando los parámetros por defecto con la opción control=rpart.control(...) de rpart(). LLame a este modelo nba_model2
+
+8. Aplique este modelo sobre el conjunto nba_test y determine la matriz de confusión.
+
+9. ¿Cómo se comparan los resultados de los modelos? ¿Es mejor el modelo 1 o el 2?
