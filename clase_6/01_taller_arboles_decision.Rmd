@@ -52,7 +52,8 @@ install_load_library( c('rpart','dplyr') )
 1. Lea el archivo "indicadores_jugadores_NBA.txt" que está disponible en la carpeta data y guarde la información en un dataframe de R. Para entender cada columna, abra el archivo y lea el encabezado. El nombre del dataframe debe ser nba.
 
 ```{r}
-'https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_6/data/indicadores_jugadores_NBA.txt'
+nba = read.csv('https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_6/data/indicadores_jugadores_NBA.txt', sep = " ", comment.char = "#")
+View(nba)
 ```
 
 

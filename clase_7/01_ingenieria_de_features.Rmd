@@ -1,0 +1,207 @@
+---
+title: "Ingenieria de features"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+## Creamos funcion para cargar facilmente librerías de R
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+```
+
+## Usaremos principalmente las librerias rpart y dplyr
+```{r}
+install_load_library( c('rpart','dplyr','rpart.plot') )
+```
+
+## En caso de disponer de tiempo y una buena conexión a internet, podriamos instalar rattle
+```{r}
+#install_load_library( c('rattle','RColorBrewer') )
+```
+
+# Cargamos los datasets de entrenamiento y evaluación
+
+```{r}
+titanic_train <- read.csv('https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_5/data/titanic_train.csv')
+View(titanic_train)
+```
+
+```{r}
+titanic_test <- read.csv('https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_5/data/titanic_test.csv')
+View(titanic_test)
+```
+
+# Veamos el nombre del primer registro
+```{r}
+titanic_train$Name[1]
+```
+
+# Unamos el train y test dataset para hacer ingenieria de features
+```{r}
+titanic_test$Survived <- NA
+combi <- rbind(titanic_train, titanic_test)
+```
+
+# Ingeniería de features usando Name
+
+Los nombres de las personas aparecen en la columna Name y son del tipo factor (variable cualitativas). Convirtamos los nombres en string
+```{r}
+combi$Name <- as.character(combi$Name)
+```
+
+Veamos nuevamente el nombre del primer registro
+```{r}
+combi$Name[1]
+```
+
+Debemos separar el campo Name entre Nombres y Apellidos. Para ello buscaremos los símbolos , y . en el campo Name
+```{r}
+strsplit(combi$Name[1], split='[,.]')
+```
+
+Tratemos de rescatar el primer elemento
+```{r}
+strsplit(combi$Name[1], split='[,.]')[[1]]
+```
+
+Saquemos el segundo elemento de este vector
+```{r}
+strsplit(combi$Name[1], split='[,.]')[[1]][2]
+```
+
+Crearemos el campo Title que contendrá el título de saludo de las personas. Usamos los comandos aprendidos anteriormente
+```{r}
+combi$Title <- strsplit(combi$Name, split='[,.]')[[1]][2]
+View(combi)
+```
+
+¿Funcióno el comando anterior? ¿Pudimos recuperar los títulos de saludo?
+A continuación aprenderemos a usar la función sapply
+
+```{r}
+combi$Title <- sapply(combi$Name, FUN=function(x) {strsplit(x, split='[,.]')[[1]][2]})
+combi$Title <- sub(' ', '', combi$Title)
+View(combi)
+```
+
+Veamos un tabla resumen de los valores del campo Title
+```{r}
+table(combi$Title)
+```
+
+Dado que varios titulos son sinonimos, los agrupamos en uno solo
+```{r}
+combi$Title[combi$Title %in% c('Mme', 'Mlle')] <- 'Mlle'
+combi$Title[combi$Title %in% c('Capt', 'Don', 'Major', 'Sir')] <- 'Sir'
+combi$Title[combi$Title %in% c('Dona', 'Lady', 'the Countess', 'Jonkheer')] <- 'Lady'
+```
+
+Transformamos el campo Title en factor
+```{r}
+combi$Title <- factor(combi$Title)
+```
+
+# Ingeniería de features usando SibSp y Parch
+
+Hacemos ingenieria de features a partir de SibSp y Parch y creamos un nuevo campo para medir el tamaño de la familia. Este resultado lo almacenaremos en el campo FamilySize
+```{r}
+combi$FamilySize <- combi$SibSp + combi$Parch + 1
+```
+
+Sumamos el valor 1 para incluir a la misma persona
+
+Una pregunta que surge cuando construimos el modelo que determina los sobrevivientes es saber si algunas familias tuvieron más chances de sobrevivir que otras. Para responder aquello, podriamos usar el campo del Apellido.
+
+Ahora, sucede que algunos apellidos se repiten mucho y por ende el apellido no es un valor que podamos usar para distinguir unas familias de otras. Una al ternativa es combinar los campos de tamaño de familia y apellido, simplemente pegándolos. Creamos un nuevo campo llamado FamilyID
+
+```{r}
+combi$Surname <- sapply(combi$Name, FUN=function(x) {strsplit(x, split='[,.]')[[1]][1]})
+combi$FamilyID <- paste(as.character(combi$FamilySize), combi$Surname, sep="")
+combi$FamilyID[1]
+```
+
+Usamos la función paste para pegar dos strings, en este caso sin separación.
+Dado que existen algunos apellidos que tiene 1 o 2 miembros en la familia, es probable que se repitan muchos. Para estos casos reemplazamos el campo FamilyID con el valor Small
+
+```{r}
+combi$FamilyID[combi$FamilySize <= 2] <- 'Small'
+View(combi)
+```
+
+Veamos una tabla resumen del nuevo campo FamilyID
+```{r}
+table(combi$FamilyID)
+```
+
+Vemos que existen algunos grupos familiares que aparecen solo una o dos veces en los datos. Volveremos a aplicar un corte y nos quedaremos solo con grupos familiares que tengan 3 o más miembros.
+```{r}
+famIDs <- data.frame(table(combi$FamilyID))
+famIDs <- famIDs[famIDs$Freq <= 2,]
+View(famIDs)
+```
+
+Usaremos el campo Var1 del dataframe famIDs para eliminar las familias con 1 o dos miembros
+
+```{r}
+combi$FamilyID[combi$FamilyID %in% famIDs$Var1] <- 'Small'
+```
+
+Convertimos el campo en factor
+```{r}
+combi$FamilyID <- factor(combi$FamilyID)
+```
+
+Volvemos a separar el dataset original entre train y test
+```{r}
+titanic_train <- combi[1:891,]
+titanic_test <- combi[892:1309,]
+```
+
+Creamos un nuevo modelo y agregamos los nuevos features que creamos.
+Recuerden que el campo Survived indica si pasajero sobrevivió.
+0: No sobrevivió
+1: Sí sobrevivió
+
+```{r}
+fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + Title + FamilySize + FamilyID,
+             data=titanic_train, method="class")
+rpart.plot(fit, extra=104, box.palette="GnBu", branch.lty=3, shadow.col="gray", nn=TRUE)
+#fancyRpartPlot(fit)
+```
+
+Hagamos una predicción en base al modelo y subamoslo
+Grabaremos el resultado del modelo y lo subiremos a la página web de Kaggle
+https://www.kaggle.com/c/titanic/
+
+```{r}
+Prediction <- predict(fit, titanic_test, type = "class")
+submit <- data.frame(PassengerId = titanic_test$PassengerId, Survived = Prediction)
+write.csv(submit, file = "results/titanic_arbol_decision_feature_eng.csv", row.names = FALSE)
+```
