@@ -1,0 +1,318 @@
+---
+title: "Uso de random forests"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+## Creamos funcion para cargar facilmente librerías de R
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+```
+
+## Usaremos principalmente las librerias rpart y dplyr
+```{r}
+install_load_library( c('rpart','dplyr','rpart.plot') )
+```
+
+## En caso de disponer de tiempo y una buena conexión a internet, podriamos instalar rattle
+```{r}
+#install_load_library( c('rattle','RColorBrewer') )
+```
+
+# Cargamos los datasets de entrenamiento y evaluación
+
+```{r}
+titanic_train <- read.csv('https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_5/data/titanic_train.csv')
+View(titanic_train)
+```
+
+```{r}
+titanic_test <- read.csv('https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/clase_5/data/titanic_test.csv')
+View(titanic_test)
+```
+
+# Veamos el nombre del primer registro
+```{r}
+titanic_train$Name[1]
+```
+
+# Unamos el train y test dataset para hacer ingenieria de features
+```{r}
+titanic_test$Survived <- NA
+combi <- rbind(titanic_train, titanic_test)
+```
+
+# Ingeniería de features títulos de saludo
+
+Crearemos el campo Title que contendrá el título de saludo de las personas. Usamos los comandos aprendidos anteriormente
+
+```{r}
+combi$Name <- as.character(combi$Name)
+combi$Title <- sapply(combi$Name, FUN=function(x) {strsplit(x, split='[,.]')[[1]][2]})
+combi$Title <- sub(' ', '', combi$Title)
+```
+
+
+Dado que varios titulos son sinonimos, los agrupamos en uno solo
+```{r}
+combi$Title[combi$Title %in% c('Mme', 'Mlle')] <- 'Mlle'
+combi$Title[combi$Title %in% c('Capt', 'Don', 'Major', 'Sir')] <- 'Sir'
+combi$Title[combi$Title %in% c('Dona', 'Lady', 'the Countess', 'Jonkheer')] <- 'Lady'
+```
+
+Transformamos el campo Title en factor
+```{r}
+combi$Title <- factor(combi$Title)
+```
+
+# Ingeniería de features Family Size
+
+Hacemos ingenieria de features a partir de SibSp y Parch y creamos un nuevo campo para medir el tamaño de la familia. Este resultado lo almacenaremos en el campo FamilySize y creamos un nuevo campo llamado FamilyID
+
+
+```{r}
+combi$FamilySize <- combi$SibSp + combi$Parch + 1
+
+combi$Surname <- sapply(combi$Name, FUN=function(x) {strsplit(x, split='[,.]')[[1]][1]})
+combi$FamilyID <- paste(as.character(combi$FamilySize), combi$Surname, sep="")
+```
+
+Dado que existen algunos apellidos que tiene 1 o 2 miembros en la familia, es probable que se repitan muchos. Para estos casos reemplazamos el campo FamilyID con el valor Small
+
+```{r}
+combi$FamilyID[combi$FamilySize <= 2] <- 'Small'
+```
+
+
+Vemos que existen algunos grupos familiares que aparecen solo una o dos veces en los datos. Volveremos a aplicar un corte y nos quedaremos solo con grupos familiares que tengan 3 o más miembros.
+
+```{r}
+famIDs <- data.frame(table(combi$FamilyID))
+famIDs <- famIDs[famIDs$Freq <= 2,]
+```
+
+Usaremos el campo Var1 del dataframe famIDs para eliminar las familias con 1 o dos miembros
+
+```{r}
+combi$FamilyID[combi$FamilyID %in% famIDs$Var1] <- 'Small'
+```
+
+Convertimos el campo en factor
+```{r}
+combi$FamilyID <- factor(combi$FamilyID)
+```
+
+# Limpieza y preparación de datos para Random Forest
+
+El algoritmo Random Forest de R tiene algunas restricciones respecto al input de datos que no están presentes en los árboles de decisión. El más importante corresponde a la limpieza de datos ausentes presente en los datasets.
+
+rpart (árboles de decisión) puede usar variables de reemplazo en caso de encontrar valores ausentes en ciertos campos. Para el dataset de Titanic tenemos muchos valores ausentes en el campo de la edad (age). Los árboles de decisión pueden lidiar con estos problemas, pues buscan variables que separan de manera similar a la edad y usan éstas para clasificar. Los Random forest no pueden hacer estos, así que debemos buscar una manera manual para remplazar estos valores.
+
+Usamos el comando summary para determinar cuántos valores NA existen
+
+```{r}
+summary(combi$Age)
+```
+
+263 valores de 1309 están ausentes, es decir un 20%! 
+
+Una posibilidad es usar un arbol de decisión para predecir la edad y usar el método anova para construir el modelo. Anteriormente habíamos usado el método "class" pues queríamos predecir una variable categórica. En este caso queremos predecir una variable continua, por lo cual usaremos "anova".
+
+```{r}
+Agefit <- rpart(Age ~ Pclass + Sex + SibSp + Parch + Fare + Embarked + Title + FamilySize, 
+                data=combi[!is.na(combi$Age),], method="anova")
+combi$Age[is.na(combi$Age)] <- predict(Agefit, combi[is.na(combi$Age),])
+View(combi)
+```
+
+Inspeccionemos el dataframe combi y revisemo si todavía quedan valores ausentes.
+
+```{r}
+summary(combi)
+```
+
+Los campos Embarked y Fare contienen valores ausentes.
+
+```{r}
+summary(combi$Embarked)
+```
+
+Podemos notar que dos pasajeros tienen en blanco el campo Embarked. En estricto rigor, tener una clase que son espacios en blanco no representa un problema serio como contener valores NA, pero por consistencia los reemplazaremos.
+
+Una manera es reemplazar estos valores ausentes con la moda, el valor que más se repite. En este caso corresponde al puerto de Southampton abreviado con la letra S.
+
+Determinemos cuales IDs tienen los espacios en blanco
+
+```{r}
+which(combi$Embarked == '')
+```
+
+Simplemente reemaplzamos estos dos registros con el valor "S" y transformamos el campo en factor
+
+```{r}
+combi$Embarked[c(62,830)] = "S"
+combi$Embarked <- factor(combi$Embarked)
+```
+
+Revisemos el campo Fare
+
+```{r}
+summary(combi$Fare)
+```
+
+Vemos que hay un solo pasajero sin valor de Fare. Veamos a cuál registro corresponde
+
+```{r}
+which(is.na(combi$Fare))
+```
+
+Reemplazaremos este registro con la mediana del campo.
+
+```{r}
+combi$Fare[1044] <- median(combi$Fare, na.rm=TRUE)
+```
+
+Nuestro dataframe ya no contiene valores ausentes. Eso sí, enfrentamos una segunda restricción: Los random forest en R pueden digerir factores que tengan un máximo de 32 levels. El campo FamilyID tiene casi el doble de ese límite.
+
+```{r}
+combi$FamilyID[1]
+```
+
+Podríamos resolver este problema con diferentes metodologías. La primera sería cambiar los niveles a sus valores enteros respectivos (usando la función unclass()) y cosntruyendo un modelo que trate a este campo como una variable continua. La segunda sería reducir el número de levels por debajo del límite.
+
+Adoptemos la segunda solución. Compiaremos el campo FamilyID en una variable nueva, FamilyID2, y la convertiremos en un string usando la función as.character(). Probaremos incrementando el límite desde 2 a 3 mimebros para definir la familia como "Small"
+
+```{r}
+# Creamos un campo FamilyID2, la cual reducirá el número de levels de FamilyID
+combi$FamilyID2 <- combi$FamilyID
+
+# Convertimos el campo en string
+combi$FamilyID2 <- as.character(combi$FamilyID2)
+combi$FamilyID2[combi$FamilySize <= 3] <- 'Small'
+
+# Convertimos de vuelta el campo en factor
+combi$FamilyID2 <- factor(combi$FamilyID2)
+combi$FamilyID2[1]
+```
+
+Podemos ver que el campo FamilyID2 contiene ahora 22 levels.
+
+Volvemos a separar el dataset original entre train y test
+```{r}
+titanic_train <- combi[1:891,]
+titanic_test <- combi[892:1309,]
+```
+
+# Creación del modelo usando Random Forest
+
+Cargamos la librería "randomForest" de R
+
+```{r}
+install_load_library( c('randomForest') )
+```
+
+Dado que el proceso puede contener dos fuentes de aleatoriedad, es conveniente definir la semilla de R antes de crear el modeo. Así podemos volver a reproducir los mismos resultados.
+
+```{r}
+set.seed(415)
+```
+
+Ahora ya estamos en posición para crear nuestro modelo usando Random Forest. La sintaxis es similar a la que usamos para constuir los árboles de decisión
+
+Creamos un nuevo modelo y agregamos los nuevos features que creamos.
+Recuerden que el campo Survived indica si pasajero sobrevivió.
+0: No sobrevivió
+1: Sí sobrevivió
+
+```{r}
+fit <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + Title + FamilySize + FamilyID2, data=titanic_train, importance=TRUE, ntree=2000)
+```
+
+En vez de especificar el método="class" como lo hacíamos en rpart, en este caso forzamos la predicción de nuestra clasificación usando de manera temporal la variable Survived como factor.
+
+El parámetro importance=true permite revisar la importancia de cada variable en la construcción del modelo final. El argument ntree corresponde a cuántos árboles de decisión usaremos.
+
+En caso de trabajar con datasets más grandes, quizás quieras el número de árboles de decisión. También se puede reducir el número de variables a usar con el parámetro mtry, por defecto se usa la raíz cuadrada del número total de varibles y en general funciona bien.
+
+En este caso nuestro dataset es pequeño, así que podemos seguir aumentando el número de árboles y no preocuparnos por la complejidad del problema.
+
+Revisemos la importancia de las variables en la construcción del modelo
+
+```{r}
+ varImpPlot(fit)
+```
+
+En los gráficos de arriba se muestran la medición de las importancias. La medición de accuracy verifica cuán mal funciona el modelo al remover esta variable, de tal manera que una alta degradación del accuracy se esperaría para varialbes que resultan muy predictivas.
+
+La medición Gini permite revisar la matemática que detrás de los árboles de decisión. Esencialmente mide cuan puros son los nodos al final del árbol. Al igual que la medición anterior, verifica cuán mal funciona el modelo al remover esta variable y un score alto significa que la variable es muy importante.
+
+Quizás lo esperábamos, pero para variable Title aparece en el primer lugar de ambas mediciones. Vemos lo importante que fue hacer ingeniería de features, pues aparecen de las primeras. 
+
+Hagamos una predicción en base al modelo y subamoslo
+Grabaremos el resultado del modelo y lo subiremos a la página web de Kaggle
+https://www.kaggle.com/c/titanic/
+
+```{r}
+Prediction <- predict(fit, titanic_test)
+submit <- data.frame(PassengerId = titanic_test$PassengerId, Survived = Prediction)
+write.csv(submit, file = "results/titanic_random_forest.csv", row.names = FALSE)
+```
+
+¿Cómo se compara el resultado con los obtenidos anteriormente?
+
+# Creación del modelo usando árcobles de inferencia condicional
+
+No nos rindamos con los random forest. Existen múltiples modelo ensamblados. Probemos un random forest que contenga árboles de inferencia condicional. Este método realiza la clasificación de una manera levemente distinta, usan test estadísitcos en vez de una medición de la pureza de las muestra.
+
+Cargamos la librería "party" de R
+
+```{r}
+install_load_library( c('party') )
+```
+
+
+```{r}
+set.seed(415)
+fit <- cforest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare +
+                                       Embarked + Title + FamilySize + FamilyID,
+                 data = titanic_train, 
+                 controls=cforest_unbiased(ntree=2000, mtry=3))
+```
+
+Los árboles de inferencia condicional son capaces de manejar factores con más levels que el algoritmo de Random Forest. Vemos que ahora debemos especificar el número de árboles usando un comando más complejo, dado que los comandos a la función cforest() se pasan de manera distitna. Aquí definimos que el número de variables a probar en cada nodo sea 3 (mtry=3).
+
+Hagamos una nueva predicción.
+
+```{r}
+Prediction <- predict(fit, titanic_test, OOB=TRUE, type = "response")
+submit <- data.frame(PassengerId = titanic_test$PassengerId, Survived = Prediction)
+write.csv(submit, file = "results/titanic_random_forest_conditional.csv", row.names = FALSE)
+```
+
