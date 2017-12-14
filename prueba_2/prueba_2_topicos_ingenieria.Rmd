@@ -11,6 +11,7 @@ output:
 
 # Nombres de integrantes
 Nombre y Apellido:
+
 Fecha: 14-12-2017
 
 # Ajustamos el locale del sistema de acuerdo al OS del computador
