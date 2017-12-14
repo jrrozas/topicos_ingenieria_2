@@ -1,0 +1,103 @@
+---
+title: "Prueba 2: Topicos de especializacion 2"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+# Nombres de integrantes
+Nombre y Apellido:
+Fecha: 14-12-2017
+
+# Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+# Cargamos las librerías que usaremos en el script
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+
+install_load_library( c('rpart','dplyr','rpart.plot') )
+```
+
+# Actividad 1
+
+Aunque para las compañías es muy importante conseguir nuevos clientes, lo es todavía más, evitar perder clientes que ya tienen. La forma natural de hacer crecer una empresa es mantener el nivel actual de clientes y crecer en la medida en que se capten nuevos clientes. 
+
+Por eso, tener modelos matemáticos que permitan estimar la probabilidad de que una persona solicite la baja de un servicio o producto es tan importante. Y cuanto mejor sea el modelo, más cerca estará la estimación de la realidad y mayor será la ganancia para la empresa.
+
+En esta actividad deberá construir un modelo para determinar si los clientes de un Banco internacional permanecerán en el Banco o pondrán fin a su contrato. Para ello usaremos una base de datos que contiene información de 10.000 clientes la cual está disponible en el archivo fuga_clientes_banco.csv (https://github.com/rpmunoz/topicos_ingenieria_2/raw/master/prueba_2/data/fuga_clientes_banco.csv).
+
+Los campos presentes en el archivo son los siguientes,
+
+Id: Id del registro en la Base de datos
+NumeroCliente: Numero único del cliente
+Apellido: Apellido del cliente
+ScoreCredito: Calificación de capacidad de crédito del cliente. Un valor más alto es mejor.
+Pais: Pais donde vive el cliente
+Sexo: Sexo del cliente
+Edad: Edad del cliente
+Antiguedad: Antiguedad del cliente en años
+Saldo: Saldo de cuenta corriente en USD
+NumeroProductos: Numero de productos del cliente
+TarjetaCredito: Indica si tiene tarjeta de crédito (1) o no tiene (0)
+MiembroActivo: Indica si es un cliente activo del banco
+SueldoAnual: Sueldo anual del cliente en USD
+FinContrato: Indica si el cliente puso fin al contrato (1) o todavía sigue como cliente (0)
+
+
+1. Lea el archivo de datos usando la función read_csv() y almacene los datos en el dataframe banco.
+
+```{r}
+
+```
+
+2. Divida el dataset completo en un 70% de entrenamiento y un 30% de evaluación. Defina la variables banco_train con los datos de entrenamiento y banco_test para evaluar.
+
+```{r}
+
+```
+
+
+3. Entrene un modelo usando el dataset banco_train y un árbol de decisión. Defina un modelo que permita predecir si un cliente continuará en el banco o terminará su contrato  (columna FinContrato).
+
+```{r}
+
+```
+
+4. Aplique este modelo sobre el dataset banco_test y determine la matriz de confusión.
+
+```{r}
+
+```
+
+5. Repita el paso 3 y 4, pero esta vez usando un método de random_forest.
+
+```{r}
+
+```
+
+6. Compare los valores de la matriz de confusión calculada usando un árbol de decisión y un random forest. ¿Qué método entrega mejores resultados?
+
+```{r}
+
+```
+
