@@ -1,0 +1,119 @@
+---
+title: "Taller evaluado arboles de decision"
+author: "Roberto Muñoz"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    #number_sections: true
+---
+
+# Nombres de integrantes
+Integrante 1:
+Integrante 2:
+Integrante 3:
+
+# Fecha de evaluación
+Fecha: 28-12-2017
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ajustamos el locale del sistema de acuerdo al OS del computador
+En caso de usar un Mac ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+En caso de usar Windows ejecute la siguiente linea
+```{r}
+Sys.setlocale("LC_ALL", 'Spanish_Chile.1252')
+```
+
+## Creamos funcion para cargar facilmente librerías de R
+```{r}
+install_load_library <- function(x){
+  for( i in x ){
+    if( ! require( i , character.only = TRUE ) ){
+      install.packages( i , dependencies = TRUE )
+      require( i , character.only = TRUE )
+    }
+  }
+}
+```
+
+## Usaremos principalmente las librerias rpart y dplyr
+```{r}
+install_load_library( c('rpart','dplyr','randomForest') )
+```
+
+
+# Actividad 1
+
+En esta actividad analizemos un dataset que contien información de 101 animales que viven en un zoológico. Este dataset contiene 16 campos o columnas que describen diferentes características de los animales. Cada animal es clasificado en alguna de las siguientes 7 clases,
+
+-Mamiferos
+-Aves
+-Reptiles
+-Peces
+-Anfibios
+-Insectos
+-Invertebrados
+
+En este taller deberá dividir el dataset en uno entrenamiento (80%) y otro de evaluación (20%), con el objetivo de construir un modelo que permita predecir la clase del animal.
+
+1. En la carpeta data encontrará dos archivos
+-**clases reino animal.csv**: Contiene información de las 7 clases del reino animal que estudiaremos en este taller
+-**animales zoo.csv**: Contiene información de los 101 animales que viven en el zoológico. La primera columna contiene el nombre del animal, las siguientes 16 columnas features del animal y la última columna la clase del reino animal al cual pertenece.
+
+Lea el archivo `animalez zoo.csv` y almacene los datos en el dataframe zoo.
+
+```{r}
+
+```
+
+2. Divida el conjunto de datos zoo en dos: Uno que usará para el entrenamiento y que debe contener el 80% de los datos, y otro que usará para evaluar el rendimiento del modelo y que debe contener el 20% de los datos. Al conjunto de entrenamiento llámelo zoo_train y al de evaluación zoo_test
+
+```{r}
+
+```
+
+
+3. Realice un análisis exploratorio del set de datos. Escoja 5 features del dataframe, con excepción de "nombre animal" y "Id clase", los cuales deberá usar para cosntruir gráficos como histogramas y gráficos de puntos. Use diferentes símbolos o colores para cada clase (mamíferos serán colo rojo, reptiles color azul, etc).
+
+```{r}
+
+```
+
+
+4. Entrene un modelo basado en el método de árboles de decisión. Use el dataset zoo_train y donde el campo a predecir es la clase del reino animal (columna Id clase).
+
+Elimine la columna `nombre animal` para que no interfiera con el análisis y construya un primer modelo que use todos los features para predecir `Id clase`.
+
+Luego construya un segundo modelo donde escriba explícitamente un máximo de 10 features (es decir, no puede usar todas las columnas). Base la elección de estas columnas en base al análisis exploratorio hecha en la pregunta 3.
+
+Calcule la matriz de confusión para los dos modelos construidos con árboles de decisión.
+
+```{r}
+
+```
+
+5. Repita la pregunta 4, pero esta vez basado en un modelo de random forest. 
+
+Parta con un primer modelo que use todos los features del dataset. Una vez construido este modelo, realice un análisis para identificar cuáles son las columnas o features más relevantes en la construcción del modelo.
+
+Construya un segundo modelo usando Random Forest y los features más relevantes que pudo identificar usando el méotodo de random Forest. Podrá usar un máximo de 10 features.
+
+Calcule la matriz de confusión para los dos modelos construidos con random forest.
+
+```{r}
+
+```
+
+6. ¿Cómo se comparan los resultados de los modelos obtenidos en las preguntas 4 y 5? La respuesta debe estar basada en un análisis cuantitativo, por lo cual deberá calcular las cantidades de precisión y exactitud.
+
+```{r}
+
+```
